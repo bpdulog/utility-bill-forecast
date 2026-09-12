@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estimate natural gas and electricity bills for a White Plains, NY home.">
+  <title>Utility Bill Forecaster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Utility Bill Forecaster home">
+        <span class="brand-mark" aria-hidden="true">⌁</span>
+        <span>Utility Bill Forecaster</span>
+      </a>
+      <span class="site-status"><span class="status-dot"></span>Runs in your browser</span>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">WHITE PLAINS · NEW YORK</p>
+          <h1>Know what your<br><em>energy bill</em> is doing.</h1>
+          <p class="hero-lede">A clear, calibrated forecast for a dual-fuel home. Test your usage, weather, winter risk, and thermostat strategy in seconds.</p>
+        </div>
+        <div class="hero-note">
+          <span class="note-label">Model snapshot</span>
+          <strong>Con Edison residential</strong>
+          <span>Gas + electric · post-tax estimates</span>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Bill forecasting tools">
+        <nav class="tabs" role="tablist" aria-label="Forecasting tools">
+          <button class="tab-button is-active" id="usage-tab" role="tab" aria-selected="true" aria-controls="usage-panel">Direct usage <span>01</span></button>
+          <button class="tab-button" id="weather-tab" role="tab" aria-selected="false" aria-controls="weather-panel">Weather forecast <span>02</span></button>
+          <button class="tab-button" id="scenario-tab" role="tab" aria-selected="false" aria-controls="scenario-panel">Winter scenarios <span>03</span></button>
+          <button class="tab-button" id="setback-tab" role="tab" aria-selected="false" aria-controls="setback-panel">Thermostat setback <span>04</span></button>
+        </nav>
+
+        <section class="tab-panel" id="usage-panel" role="tabpanel" aria-labelledby="usage-tab">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">01 / MANUAL CONSUMPTION</p>
+              <h2>Start with the bill you can see.</h2>
+            </div>
+            <p>Enter the usage from a recent billing cycle to split the estimate between gas and electricity.</p>
+          </div>
+          <div class="input-grid three-up">
+            <label class="field">Natural gas <span>therms</span><input id="therms" type="number" min="0" step="1" value="110"><small>Typical winter cycle</small></label>
+            <label class="field">Electricity <span>kWh</span><input id="kwh" type="number" min="0" step="5" value="420"><small>Metered consumption</small></label>
+            <label class="field">Billing cycle <span>days</span><input id="usage-days" type="number" min="1" step="1" value="30"><small>Fixed charges prorate</small></label>
+          </div>
+          <div class="error-message" id="usage-error" role="alert" hidden></div>
+          <div class="metric-grid four-up">
+            <article class="metric-card gas-card" id="usage-gas-card"><span class="metric-label">Gas</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card electric-card" id="usage-electric-card"><span class="metric-label">Electric</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card dark-card" id="usage-total-card"><span class="metric-label">Total</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card" id="usage-pretax-card"><span class="metric-label">Pre-tax total</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          </div>
+          <div class="result-heading"><div><p class="eyebrow">BILL BREAKDOWN</p><h3>Where the estimate comes from</h3></div><p>Effective rates: <strong id="usage-gas-rate">—</strong> gas · <strong id="usage-electric-rate">—</strong> electric</p></div>
+          <div class="table-wrap" id="usage-table"></div>
+        </section>
+
+        <section class="tab-panel" id="weather-panel" role="tabpanel" aria-labelledby="weather-tab" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">02 / WEATHER-DRIVEN FORECAST</p>
+              <h2>Turn a temperature into a bill.</h2>
+            </div>
+            <p>Use a KHPN monthly normal or enter your own average outdoor temperature.</p>
+          </div>
+          <div class="mode-switch" role="radiogroup" aria-label="Weather forecast input">
+            <label><input type="radio" name="weather-mode" value="month" checked><span>NOAA normal month</span></label>
+            <label><input type="radio" name="weather-mode" value="temperature"><span>Custom temperature</span></label>
+          </div>
+          <div class="input-grid three-up weather-inputs">
+            <label class="field" id="month-input-wrap">Month<select id="weather-month"></select><small>Embedded monthly normal</small></label>
+            <label class="field" id="temperature-input-wrap" hidden>Average outdoor temperature <span>°F</span><input id="weather-temperature" type="number" min="-20" max="120" step="0.5" value="45"><small>Heating/cooling degree days use base 65°F</small></label>
+            <label class="field">Billing cycle <span>days</span><input id="weather-days" type="number" min="1" step="1" value="30"><small>Used for custom degree days</small></label>
+          </div>
+          <div class="error-message" id="weather-error" role="alert" hidden></div>
+          <div class="metric-grid four-up">
+            <article class="metric-card" id="weather-hdd-card"><span class="metric-label">Heating degree days</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card" id="weather-cdd-card"><span class="metric-label">Cooling degree days</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card gas-card" id="weather-therms-card"><span class="metric-label">Predicted gas</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card dark-card" id="weather-total-card"><span class="metric-label">Estimated bill</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          </div>
+          <div class="weather-summary"><span id="weather-summary">—</span><span>Gas <strong id="weather-gas">—</strong> · Electric <strong id="weather-electric">—</strong> · <strong id="weather-kwh">—</strong></span></div>
+        </section>
+
+        <section class="tab-panel" id="scenario-panel" role="tabpanel" aria-labelledby="scenario-tab" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">03 / OCTOBER–APRIL</p>
+              <h2>See the shape of winter risk.</h2>
+            </div>
+            <p>Mild and severe cases adjust heating demand and wholesale gas cost around the baseline.</p>
+          </div>
+          <div class="input-grid two-up compact-inputs">
+            <label class="field">Days per billing cycle <span>days</span><input id="scenario-days" type="number" min="1" step="1" value="30"><small>Applied to each month</small></label>
+            <label class="field">Baseline wholesale gas factor <span>GCF</span><input id="scenario-gcf" type="number" min="0" step="0.01" value="0.80"><small>Baseline 0.80 · mild −4% · severe +6%</small></label>
+          </div>
+          <div class="error-message" id="scenario-error" role="alert" hidden></div>
+          <div class="metric-grid two-up scenario-metrics">
+            <article class="metric-card dark-card" id="scenario-total-card"><span class="metric-label">Baseline season</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card amber-card" id="scenario-range-card"><span class="metric-label">Severe winter</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          </div>
+          <div class="result-heading"><div><p class="eyebrow">MONTHLY DETAIL</p><h3>Scenario comparison</h3></div><p>Variance is measured against the same month's baseline.</p></div>
+          <div class="table-wrap wide-table" id="scenario-table"></div>
+          <div class="result-heading totals-heading"><div><p class="eyebrow">SEASON TOTALS</p><h3>Seven-month view</h3></div></div>
+          <div class="table-wrap wide-table" id="scenario-total-table"></div>
+        </section>
+
+        <section class="tab-panel" id="setback-panel" role="tabpanel" aria-labelledby="setback-tab" hidden>
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">04 / HEATING EFFICIENCY</p>
+              <h2>Price the hours you turn it down.</h2>
+            </div>
+            <p>Estimate the avoided gas and electric usage from a heating setback during part of each day.</p>
+          </div>
+          <div class="input-grid two-up compact-inputs">
+            <label class="field">Setback <span>°F</span><input id="setback-degrees" type="number" min="0" max="15" step="0.5" value="5"><small>Temperature reduction</small></label>
+            <label class="field">Hours active per day <span>hours</span><input id="setback-hours" type="number" min="0" max="24" step="0.5" value="8"><small>Maximum 24 hours</small></label>
+          </div>
+          <div class="error-message" id="setback-error" role="alert" hidden></div>
+          <div class="metric-grid two-up">
+            <article class="metric-card mint-card" id="setback-monthly-card"><span class="metric-label">Monthly savings</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+            <article class="metric-card dark-card" id="setback-season-card"><span class="metric-label">November–March</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          </div>
+          <div class="result-heading"><div><p class="eyebrow">SAVINGS BREAKDOWN</p><h3>What the setback avoids</h3></div><p>Based on the calibrated heating-demand coefficients.</p></div>
+          <div class="table-wrap wide-table" id="setback-table"></div>
+        </section>
+      </section>
+
+      <section class="model-notes" aria-labelledby="notes-title">
+        <div>
+          <p class="eyebrow">UNDER THE HOOD</p>
+          <h2 id="notes-title">A transparent model, not a black box.</h2>
+        </div>
+        <div class="notes-grid">
+          <p><strong>Gas</strong><br><code>$31.57 + 2.4216 × therms</code></p>
+          <p><strong>Electric</strong><br><code>$8.52 + 0.3555 × kWh</code></p>
+          <p><strong>Weather</strong><br><code>HDD/CDD base 65°F</code></p>
+          <p><strong>Tax display</strong><br><code>Gas 2.65% + 6% · Electric 6%</code></p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Dual-fuel residential utility forecast · White Plains, NY</span>
+      <span>All calculations run locally in your browser.</span>
+    </footer>
+  </div>
+  <script src="model.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

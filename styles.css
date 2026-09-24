@@ -248,6 +248,22 @@ h2 {
 .field input:focus, .field select:focus { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(29, 75, 63, 0.1); }
 .field small { color: var(--muted); display: block; font-size: 0.69rem; font-weight: 500; margin-top: 8px; }
 
+.gcf-preset {
+  background: #fbfcfa;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--forest);
+  cursor: pointer;
+  font-family: "DM Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  margin: 6px 4px 0 0;
+  padding: 5px 9px;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.gcf-preset:hover { background: var(--forest); border-color: var(--forest); color: white; }
+
 .mode-switch { display: flex; gap: 8px; margin-bottom: 25px; }
 .mode-switch label { cursor: pointer; }
 .mode-switch input { position: absolute; opacity: 0; }

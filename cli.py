@@ -52,7 +52,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--temperature", type=float, help="custom average outdoor temperature in F")
     parser.add_argument("--billing-days", type=float, default=30.0, help="billing cycle length (default: 30)")
     parser.add_argument("--hours", type=float, default=24.0, help="setback hours active per day (default: 24)")
-    parser.add_argument("--gcf", type=float, default=0.80, help="baseline wholesale gas cost factor")
+    parser.add_argument(
+        "--gcf",
+        type=float,
+        default=0.80,
+        help=(
+            "wholesale gas cost factor: a unitless market gauge where 0.80 is normal and "
+            "higher means gas is expensive (default: 0.80)"
+        ),
+    )
     return parser
 
 

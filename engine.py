@@ -27,6 +27,15 @@ ELECTRIC_KWH_PER_CDD = 0.5083
 
 GAS_MIN_THERMS = 4.0
 ELECTRIC_MIN_KWH = 235.0
+
+# GCF (gas cost factor) is a wholesale supply-cost multiplier, not a dollar
+# amount: 0.80 is the ordinary-market reference point. Think of it as "how
+# expensive gas is right now" on a unitless scale where 1.00 means supply costs
+# are 25% above normal and 0.80 is normal. It shifts the marginal gas rate
+# linearly, so the household's other charges are unaffected. A 1% move in GCF
+# (for example 0.80 -> 0.808) moves the gas rate by 1.08809 cents/therm, roughly
+# 0.45%; GCF_TO_GAS_RATE is the cents-per-therm slope that converts the unitless
+# factor into the calibrated rate.
 BASELINE_GCF = 0.80
 GCF_TO_GAS_RATE = 1.08809
 
@@ -193,7 +202,14 @@ def predict_usage(hdd: float, cdd: float) -> Usage:
 
 
 def gas_rate_for_gcf(gcf: float = BASELINE_GCF) -> float:
-    """Translate a wholesale gas cost factor into the calibrated gas rate."""
+    """Translate a unitless wholesale gas cost factor into a $/therm gas rate.
+
+    ``gcf`` is a market-cost multiplier relative to the 0.80 normal, not a
+    price. The calibrated all-in rate already reflects ``BASELINE_GCF``, so
+    only the distance from 0.80 is priced in. ``gcf=0.80`` returns
+    ``GAS_RATE`` unchanged; ``gcf=0.84`` (supply costs 5% above normal) returns
+    ``GAS_RATE + 0.04 * GCF_TO_GAS_RATE``.
+    """
 
     factor = _non_negative(gcf, "gcf")
     return GAS_RATE + (factor - BASELINE_GCF) * GCF_TO_GAS_RATE
@@ -297,7 +313,14 @@ def generate_scenarios(
     baseline_gcf: float = BASELINE_GCF,
     months: Iterable[str] = HEATING_SEASON,
 ) -> ScenarioResult:
-    """Generate baseline, mild, and severe heating-season scenarios."""
+    """Generate baseline, mild, and severe heating-season scenarios.
+
+    ``baseline_gcf`` sets the wholesale gas cost factor every scenario starts
+    from (see ``gas_rate_for_gcf``). The mild and severe winters then scale the
+    resulting gas rate directly by the -4% / +6% factors in ``definitions``, so
+    the labels describe the actual change in the gas rate rather than a change
+    in the market factor.
+    """
 
     day_count = _positive(billing_days, "billing_days")
     starting_gcf = _non_negative(baseline_gcf, "baseline_gcf")
@@ -328,9 +351,8 @@ def generate_scenarios(
         )
 
     rows: list[ScenarioMonth] = []
-    for scenario, hdd_factor, gcf_adjustment in definitions:
-        scenario_gcf = starting_gcf * (1.0 + gcf_adjustment)
-        scenario_rate = gas_rate_for_gcf(scenario_gcf)
+    for scenario, hdd_factor, rate_adjustment in definitions:
+        scenario_rate = baseline_rate * (1.0 + rate_adjustment)
         for month in selected_months:
             normal = MONTHLY_NORMALS[month]
             hdd = normal["hdd"] * hdd_factor

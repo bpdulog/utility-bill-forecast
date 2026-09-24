@@ -46,3 +46,13 @@ The primary post-tax outputs use the calibrated equations:
 - Combined: `40.09 + 2.4216 × therms + 0.3555 × kWh`
 
 Billing days prorate the fixed intercepts while leaving measured usage and its marginal charge unchanged. Weather estimates use a 65°F base temperature. The gas model identifies a 2.65% Westchester Gross Receipts Tax and 6% White Plains sales tax; the electric pre-tax display uses an explicit 6% presentation assumption.
+
+### The wholesale gas cost factor (GCF)
+
+The winter-scenario input labelled "wholesale gas cost factor" is a **unitless market gauge of how expensive gas supply is at that moment**, not a price in dollars. `0.80` is the calibrated normal, so the factor only moves the marginal gas rate by its distance from 0.80:
+
+```text
+gas_rate = 2.4216 + (gcf - 0.80) * 1.08809
+```
+
+Reading it in round numbers: `0.80` is an ordinary gas year, `0.90` is a high one (about 12% dearer per therm), and `1.00` is a spike (about 25% dearer). The mild and severe scenarios are separate: they scale the resulting gas rate directly by −4% and +6% on top of whatever baseline you enter. Fixed charges and electricity are unaffected, so a higher GCF only changes the variable gas line.

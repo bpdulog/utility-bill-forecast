@@ -19,7 +19,12 @@
     ELECTRIC_KWH_PER_CDD: 0.5083,
     GAS_MIN_THERMS: 4.0,
     ELECTRIC_MIN_KWH: 235.0,
+    // GCF (gas cost factor) is a unitless wholesale supply-cost multiplier, not
+    // a price: 0.80 is normal/ordinary market, and only the distance from 0.80
+    // is priced into the gas rate. Higher means gas is expensive right now.
     BASELINE_GCF: 0.80,
+    // Cents-per-therm slope that turns the unitless GCF distance into a rate;
+    // a 1% move in GCF moves the gas rate by about 0.45%.
     GCF_TO_GAS_RATE: 1.08809,
     WESTCHESTER_GRT_RATE: 0.0265,
     WHITE_PLAINS_SALES_TAX_RATE: 0.06,
@@ -98,6 +103,9 @@
     };
   }
 
+  // Converts a unitless wholesale gas cost factor into a $/therm rate.
+  // 0.80 is the calibrated normal, so only the distance from it is priced in:
+  // gasRateForGcf(0.80) returns GAS_RATE, and 0.84 adds 0.04 * GCF_TO_GAS_RATE.
   function gasRateForGcf(gcf) {
     var factor = nonNegative(gcf === undefined ? MODEL.BASELINE_GCF : gcf, "GCF");
     return MODEL.GAS_RATE + (factor - MODEL.BASELINE_GCF) * MODEL.GCF_TO_GAS_RATE;
@@ -174,6 +182,9 @@
     };
   }
 
+  // baselineGcf sets the gas rate every scenario starts from (see
+  // gasRateForGcf); the mild and severe definitions then scale that rate
+  // directly by a fixed -4% / +6%.
   function generateScenarios(billingDays, baselineGcf, months) {
     var dayCount = positive(billingDays === undefined ? 30 : billingDays, "billing days");
     var startingGcf = nonNegative(baselineGcf === undefined ? MODEL.BASELINE_GCF : baselineGcf, "baseline GCF");
@@ -183,9 +194,9 @@
     }
 
     var definitions = [
-      { name: "Baseline", hddFactor: 1.00, gcfAdjustment: 0.00 },
-      { name: "Mild Winter", hddFactor: 0.88, gcfAdjustment: -0.04 },
-      { name: "Severe Winter", hddFactor: 1.12, gcfAdjustment: 0.06 }
+      { name: "Baseline", hddFactor: 1.00, rateAdjustment: 0.00 },
+      { name: "Mild Winter", hddFactor: 0.88, rateAdjustment: -0.04 },
+      { name: "Severe Winter", hddFactor: 1.12, rateAdjustment: 0.06 }
     ];
     var baselineRate = gasRateForGcf(startingGcf);
     var baselineRows = {};
@@ -198,8 +209,7 @@
 
     var rows = [];
     definitions.forEach(function (definition) {
-      var scenarioGcf = startingGcf * (1 + definition.gcfAdjustment);
-      var scenarioRate = gasRateForGcf(scenarioGcf);
+      var scenarioRate = baselineRate * (1 + definition.rateAdjustment);
       selectedMonths.forEach(function (month) {
         var normal = MONTHLY_NORMALS[month];
         var hdd = normal.hdd * definition.hddFactor;

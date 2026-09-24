@@ -4,7 +4,9 @@ import pytest
 
 from engine import (
     BASELINE_GCF,
+    GAS_INTERCEPT,
     GAS_RATE,
+    HEATING_SEASON,
     calculate_bill,
     calculate_setback_savings,
     forecast_weather,
@@ -46,6 +48,35 @@ def test_custom_temperature_uses_billing_days():
 def test_gcf_adjustment():
     assert gas_rate_for_gcf(BASELINE_GCF) == pytest.approx(GAS_RATE)
     assert gas_rate_for_gcf(0.84) == pytest.approx(GAS_RATE + 0.04 * 1.08809)
+
+
+def test_scenarios_scale_the_gas_rate_directly():
+    baseline_rate = gas_rate_for_gcf(BASELINE_GCF)
+    result = generate_scenarios(billing_days=30)
+    severe = next(row for row in result.seasonal_totals if row.scenario == "Severe Winter")
+    mild = next(row for row in result.seasonal_totals if row.scenario == "Mild Winter")
+
+    # The +6% label applies to the gas rate itself: the seasonal gas dollars
+    # equal the severe rate times severe usage plus the fixed intercepts across
+    # the seven months. A GCF shift would have moved the rate by only ~1.2%.
+    assert severe.gas_dollars == pytest.approx(
+        baseline_rate * 1.06 * severe.therms + GAS_INTERCEPT * len(HEATING_SEASON)
+    )
+
+    mild_rate = baseline_rate * 0.96
+    assert mild.gas_dollars == pytest.approx(
+        mild_rate * mild.therms + GAS_INTERCEPT * len(HEATING_SEASON)
+    )
+
+
+def test_mild_scenario_keeps_baseline_gas_rate_when_rate_adjustment_is_zero():
+    result = generate_scenarios(billing_days=30)
+    baseline = next(row for row in result.seasonal_totals if row.scenario == "Baseline")
+
+    assert baseline.gas_dollars == pytest.approx(
+        gas_rate_for_gcf(BASELINE_GCF) * baseline.therms
+        + GAS_INTERCEPT * len(HEATING_SEASON)
+    )
 
 
 def test_scenarios_have_monthly_and_season_totals():

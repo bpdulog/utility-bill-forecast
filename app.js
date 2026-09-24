@@ -245,6 +245,13 @@
     bindLiveCalculation(["scenario-days", "scenario-gcf"], calculateScenarios);
     bindLiveCalculation(["setback-degrees", "setback-hours"], calculateSetback);
 
+    document.querySelectorAll(".gcf-preset").forEach(function (button) {
+      button.addEventListener("click", function () {
+        byId("scenario-gcf").value = button.getAttribute("data-gcf");
+        calculateScenarios();
+      });
+    });
+
     calculateDirectBill();
     calculateWeatherForecast();
     calculateScenarios();

@@ -4,6 +4,29 @@
   var model = window.ForecastModel;
   var moneyFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
+  var usageChartInstance = null;
+  var scenarioChartInstance = null;
+  var currentUsageView = "stacked";
+  var currentScenarioView = "dollars";
+  var latestBillData = null;
+  var latestScenarioResult = null;
+
+  if (window.Chart) {
+    Chart.defaults.font.family = "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    Chart.defaults.color = "#6f7d78";
+    Chart.defaults.plugins.tooltip.backgroundColor = "#12372f";
+    Chart.defaults.plugins.tooltip.titleColor = "#ffffff";
+    Chart.defaults.plugins.tooltip.bodyColor = "#cce7d4";
+    Chart.defaults.plugins.tooltip.borderColor = "#1d4b3f";
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 4;
+    Chart.defaults.plugins.tooltip.boxPadding = 5;
+    Chart.defaults.plugins.tooltip.usePointStyle = true;
+    Chart.defaults.plugins.tooltip.bodyFont = { family: "'DM Mono', monospace", size: 12 };
+    Chart.defaults.plugins.tooltip.titleFont = { family: "'Manrope', sans-serif", weight: "700", size: 12 };
+  }
+
   function byId(id) {
     return document.getElementById(id);
   }
@@ -82,6 +105,148 @@
     target.appendChild(table);
   }
 
+  function renderUsageChart(bill) {
+    if (!window.Chart || !bill) return;
+    latestBillData = bill;
+    var canvas = byId("usage-chart");
+    if (!canvas) return;
+
+    if (usageChartInstance) {
+      usageChartInstance.destroy();
+      usageChartInstance = null;
+    }
+
+    var ctx = canvas.getContext("2d");
+
+    if (currentUsageView === "stacked") {
+      usageChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Natural Gas", "Electricity"],
+          datasets: [
+            {
+              label: "Fixed Charge",
+              data: [bill.gasFixed, bill.electricFixed],
+              backgroundColor: "#8ebca0",
+              hoverBackgroundColor: "#78ac8d",
+              borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 },
+              borderSkipped: false,
+              stack: "cost"
+            },
+            {
+              label: "Variable Charge",
+              data: [bill.gasVariable, bill.electricVariable],
+              backgroundColor: "#1d4b3f",
+              hoverBackgroundColor: "#12372f",
+              borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+              borderSkipped: false,
+              stack: "cost"
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 350 },
+          plugins: {
+            legend: {
+              position: "top",
+              align: "end",
+              labels: {
+                boxWidth: 12,
+                boxHeight: 12,
+                font: { size: 11, weight: "600" },
+                color: "#6f7d78",
+                padding: 10
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  var total = context.dataIndex === 0 ? bill.gasPostTax : bill.electricPostTax;
+                  var pct = total > 0 ? ((context.parsed.y / total) * 100).toFixed(1) + "%" : "0%";
+                  return " " + context.dataset.label + ": " + money(context.parsed.y) + " (" + pct + ")";
+                },
+                afterBody: function (contexts) {
+                  var idx = contexts[0].dataIndex;
+                  var total = idx === 0 ? bill.gasPostTax : bill.electricPostTax;
+                  return "Total " + (idx === 0 ? "Gas" : "Electric") + ": " + money(total);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                font: { weight: "700", size: 12 },
+                color: "#17221f"
+              }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              grid: { color: "#edf1ed" },
+              ticks: {
+                font: { family: "'DM Mono', monospace", size: 11 },
+                color: "#6f7d78",
+                callback: function (val) {
+                  return "$" + val;
+                }
+              }
+            }
+          }
+        }
+      });
+    } else {
+      var gasPct = bill.totalPostTax > 0 ? ((bill.gasPostTax / bill.totalPostTax) * 100).toFixed(1) : 0;
+      var elPct = bill.totalPostTax > 0 ? ((bill.electricPostTax / bill.totalPostTax) * 100).toFixed(1) : 0;
+      usageChartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Natural Gas (" + gasPct + "%)", "Electricity (" + elPct + "%)"],
+          datasets: [
+            {
+              data: [bill.gasPostTax, bill.electricPostTax],
+              backgroundColor: ["#1d4b3f", "#f0b65b"],
+              hoverBackgroundColor: ["#12372f", "#dfa447"],
+              borderColor: "#ffffff",
+              borderWidth: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 350 },
+          cutout: "64%",
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                boxWidth: 12,
+                boxHeight: 12,
+                font: { size: 12, weight: "700" },
+                color: "#17221f",
+                padding: 16
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  var total = bill.totalPostTax;
+                  var val = context.parsed;
+                  var pct = total > 0 ? ((val / total) * 100).toFixed(1) + "%" : "0%";
+                  return " " + context.label.split(" (")[0] + ": " + money(val) + " (" + pct + " of bill)";
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
   function calculateDirectBill() {
     clearError("usage-error");
     try {
@@ -105,6 +270,7 @@
         { charge: "Pre-tax", gas: bill.gasPreTax, electric: bill.electricPreTax },
         { charge: "Post-tax", gas: bill.gasPostTax, electric: bill.electricPostTax }
       ]);
+      renderUsageChart(bill);
     } catch (error) {
       showError("usage-error", error);
     }
@@ -131,6 +297,178 @@
     } catch (error) {
       showError("weather-error", error);
     }
+  }
+
+  function renderScenarioChart(result) {
+    if (!window.Chart || !result) return;
+    latestScenarioResult = result;
+    var canvas = byId("scenario-chart");
+    if (!canvas) return;
+
+    if (scenarioChartInstance) {
+      scenarioChartInstance.destroy();
+      scenarioChartInstance = null;
+    }
+
+    var ctx = canvas.getContext("2d");
+
+    var baselineRows = result.rows.filter(function (r) { return r.scenario === "Baseline"; });
+    var mildRows = result.rows.filter(function (r) { return r.scenario === "Mild Winter"; });
+    var severeRows = result.rows.filter(function (r) { return r.scenario === "Severe Winter"; });
+    var months = baselineRows.map(function (r) { return r.month; });
+
+    var datasets = [];
+    var yAxisConfig = {
+      grid: { color: "#edf1ed" },
+      ticks: {
+        font: { family: "'DM Mono', monospace", size: 11 },
+        color: "#6f7d78"
+      }
+    };
+    var tooltipCallbacks = {};
+
+    if (currentScenarioView === "dollars") {
+      datasets = [
+        {
+          label: "Mild Winter (-4% GCF, -12% HDD)",
+          data: mildRows.map(function (r) { return r.totalDollars; }),
+          backgroundColor: "#8ebca0",
+          hoverBackgroundColor: "#78ac8d",
+          borderRadius: 4
+        },
+        {
+          label: "Baseline",
+          data: baselineRows.map(function (r) { return r.totalDollars; }),
+          backgroundColor: "#1d4b3f",
+          hoverBackgroundColor: "#12372f",
+          borderRadius: 4
+        },
+        {
+          label: "Severe Winter (+6% GCF, +12% HDD)",
+          data: severeRows.map(function (r) { return r.totalDollars; }),
+          backgroundColor: "#f0b65b",
+          hoverBackgroundColor: "#dfa447",
+          borderRadius: 4
+        }
+      ];
+      yAxisConfig.beginAtZero = true;
+      yAxisConfig.ticks.callback = function (val) { return "$" + val; };
+      tooltipCallbacks = {
+        label: function (context) {
+          return " " + context.dataset.label.split(" (")[0] + ": " + money(context.parsed.y);
+        },
+        afterLabel: function (context) {
+          var monthIdx = context.dataIndex;
+          var datasetIdx = context.datasetIndex;
+          var row = datasetIdx === 0 ? mildRows[monthIdx] : datasetIdx === 1 ? baselineRows[monthIdx] : severeRows[monthIdx];
+          var lines = [
+            "  Gas: " + money(row.gasDollars) + " · Electric: " + money(row.electricDollars),
+            "  Therms: " + number(row.therms, 1) + " · kWh: " + number(row.kwh, 1)
+          ];
+          if (row.varianceVsBaseline !== 0) {
+            lines.push("  Variance vs Baseline: " + signedMoney(row.varianceVsBaseline));
+          }
+          return lines.join("\n");
+        }
+      };
+    } else if (currentScenarioView === "therms") {
+      datasets = [
+        {
+          label: "Mild Winter",
+          data: mildRows.map(function (r) { return r.therms; }),
+          backgroundColor: "#8ebca0",
+          hoverBackgroundColor: "#78ac8d",
+          borderRadius: 4
+        },
+        {
+          label: "Baseline",
+          data: baselineRows.map(function (r) { return r.therms; }),
+          backgroundColor: "#1d4b3f",
+          hoverBackgroundColor: "#12372f",
+          borderRadius: 4
+        },
+        {
+          label: "Severe Winter",
+          data: severeRows.map(function (r) { return r.therms; }),
+          backgroundColor: "#f0b65b",
+          hoverBackgroundColor: "#dfa447",
+          borderRadius: 4
+        }
+      ];
+      yAxisConfig.beginAtZero = true;
+      yAxisConfig.ticks.callback = function (val) { return val + " th"; };
+      tooltipCallbacks = {
+        label: function (context) {
+          return " " + context.dataset.label + ": " + number(context.parsed.y, 1) + " therms";
+        }
+      };
+    } else if (currentScenarioView === "variance") {
+      datasets = [
+        {
+          label: "Mild Winter (Savings)",
+          data: mildRows.map(function (r) { return r.varianceVsBaseline; }),
+          backgroundColor: "#8ebca0",
+          hoverBackgroundColor: "#78ac8d",
+          borderRadius: 4
+        },
+        {
+          label: "Severe Winter (Added Cost)",
+          data: severeRows.map(function (r) { return r.varianceVsBaseline; }),
+          backgroundColor: "#f0b65b",
+          hoverBackgroundColor: "#dfa447",
+          borderRadius: 4
+        }
+      ];
+      yAxisConfig.ticks.callback = function (val) {
+        return (val > 0 ? "+$" : val < 0 ? "-$" : "$") + Math.abs(val);
+      };
+      tooltipCallbacks = {
+        label: function (context) {
+          return " " + context.dataset.label + ": " + signedMoney(context.parsed.y);
+        }
+      };
+    }
+
+    scenarioChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: months,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 350 },
+        categoryPercentage: 0.78,
+        barPercentage: 0.88,
+        plugins: {
+          legend: {
+            position: "top",
+            align: "end",
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              font: { size: 11, weight: "600" },
+              color: "#6f7d78",
+              padding: 12
+            }
+          },
+          tooltip: {
+            callbacks: tooltipCallbacks
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { weight: "700", size: 11 },
+              color: "#17221f"
+            }
+          },
+          y: yAxisConfig
+        }
+      }
+    });
   }
 
   function calculateScenarios() {
@@ -168,6 +506,7 @@
       var baseline = result.seasonalTotals[0];
       setMetric("scenario-total-card", "Baseline season", money(baseline.totalDollars), "October–April");
       setMetric("scenario-range-card", "Severe winter", money(result.seasonalTotals[2].totalDollars), "variance " + signedMoney(result.seasonalTotals[2].varianceVsBaseline));
+      renderScenarioChart(result);
     } catch (error) {
       showError("scenario-error", error);
     }
@@ -215,6 +554,12 @@
     document.querySelectorAll(".tab-panel").forEach(function (panel) {
       panel.hidden = panel.id !== button.getAttribute("aria-controls");
     });
+    var targetId = button.getAttribute("aria-controls");
+    if (targetId === "usage-panel" && usageChartInstance) {
+      usageChartInstance.resize();
+    } else if (targetId === "scenario-panel" && scenarioChartInstance) {
+      scenarioChartInstance.resize();
+    }
   }
 
   function bindLiveCalculation(ids, callback) {
@@ -238,6 +583,43 @@
     });
     document.querySelectorAll("input[name='weather-mode']").forEach(function (radio) {
       radio.addEventListener("change", toggleWeatherInputs);
+    });
+
+    var usageToggleStack = byId("usage-toggle-stack");
+    var usageToggleDonut = byId("usage-toggle-donut");
+    if (usageToggleStack && usageToggleDonut) {
+      usageToggleStack.addEventListener("click", function () {
+        currentUsageView = "stacked";
+        usageToggleStack.classList.add("is-active");
+        usageToggleDonut.classList.remove("is-active");
+        renderUsageChart(latestBillData);
+      });
+      usageToggleDonut.addEventListener("click", function () {
+        currentUsageView = "donut";
+        usageToggleDonut.classList.add("is-active");
+        usageToggleStack.classList.remove("is-active");
+        renderUsageChart(latestBillData);
+      });
+    }
+
+    var scenarioToggles = [
+      { id: "scenario-toggle-dollars", view: "dollars" },
+      { id: "scenario-toggle-therms", view: "therms" },
+      { id: "scenario-toggle-variance", view: "variance" }
+    ];
+
+    scenarioToggles.forEach(function (item) {
+      var btn = byId(item.id);
+      if (btn) {
+        btn.addEventListener("click", function () {
+          currentScenarioView = item.view;
+          scenarioToggles.forEach(function (t) {
+            var b = byId(t.id);
+            if (b) b.classList.toggle("is-active", t.view === item.view);
+          });
+          renderScenarioChart(latestScenarioResult);
+        });
+      }
     });
 
     bindLiveCalculation(["therms", "kwh", "usage-days"], calculateDirectBill);

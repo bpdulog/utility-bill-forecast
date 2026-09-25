@@ -4,9 +4,9 @@ An interactive, static GitHub Pages app for estimating natural-gas and electrici
 
 The calculator runs entirely in the browser. It includes:
 
-- Direct usage bill breakdowns
+- Direct usage bill breakdowns with interactive cost composition charts
 - Weather-driven monthly forecasts using HDD/CDD
-- October–April mild, baseline, and severe winter scenarios
+- October–April mild, baseline, and severe winter scenario trajectories and comparisons
 - Thermostat setback savings estimates
 
 ## Run locally
@@ -33,7 +33,8 @@ The workflow in `.github/workflows/pages.yml` publishes the repository as a stat
 - `index.html` — static application shell and accessible form controls.
 - `styles.css` — responsive visual design.
 - `model.js` — browser-safe implementation of the forecasting formulas.
-- `app.js` — UI state, calculations, and table rendering.
+- `app.js` — UI state, calculations, interactive Chart.js visualizations, and table rendering.
+- `chart.umd.min.js` — vendored Chart.js library for self-contained, offline-ready chart visuals.
 - `engine.py`, `cli.py`, `app.py` — original Python model, CLI, and Streamlit implementation retained for reference and command-line use.
 - `.github/workflows/pages.yml` — GitHub Pages deployment workflow.
 

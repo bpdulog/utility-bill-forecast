@@ -62,8 +62,25 @@
             <article class="metric-card dark-card" id="usage-total-card"><span class="metric-label">Total</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
             <article class="metric-card" id="usage-pretax-card"><span class="metric-label">Pre-tax total</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
           </div>
-          <div class="result-heading"><div><p class="eyebrow">BILL BREAKDOWN</p><h3>Where the estimate comes from</h3></div><p>Effective rates: <strong id="usage-gas-rate">—</strong> gas · <strong id="usage-electric-rate">—</strong> electric</p></div>
-          <div class="table-wrap" id="usage-table"></div>
+          <div class="result-heading">
+            <div><p class="eyebrow">BILL BREAKDOWN</p><h3>Where the estimate comes from</h3></div>
+            <p>Effective rates: <strong id="usage-gas-rate">—</strong> gas · <strong id="usage-electric-rate">—</strong> electric</p>
+          </div>
+          <div class="usage-breakdown-container">
+            <div class="table-wrap" id="usage-table"></div>
+            <div class="chart-card usage-chart-card">
+              <div class="chart-card-header">
+                <h4 class="chart-title">Cost Composition</h4>
+                <div class="chart-toggle" role="group" aria-label="Usage chart view">
+                  <button type="button" class="toggle-btn is-active" id="usage-toggle-stack" data-view="stacked">Fixed vs Variable</button>
+                  <button type="button" class="toggle-btn" id="usage-toggle-donut" data-view="donut">Fuel Share</button>
+                </div>
+              </div>
+              <div class="chart-canvas-wrap">
+                <canvas id="usage-chart"></canvas>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="tab-panel" id="weather-panel" role="tabpanel" aria-labelledby="weather-tab" hidden>
@@ -109,6 +126,21 @@
           <div class="metric-grid two-up scenario-metrics">
             <article class="metric-card dark-card" id="scenario-total-card"><span class="metric-label">Baseline season</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
             <article class="metric-card amber-card" id="scenario-range-card"><span class="metric-label">Severe winter</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          </div>
+          <div class="scenario-chart-section">
+            <div class="result-heading">
+              <div><p class="eyebrow">VISUAL COMPARISON</p><h3>Winter Bill &amp; Demand Trajectory</h3></div>
+              <div class="chart-toggle" role="group" aria-label="Winter scenario chart view">
+                <button type="button" class="toggle-btn is-active" id="scenario-toggle-dollars" data-view="dollars">Total Bill ($)</button>
+                <button type="button" class="toggle-btn" id="scenario-toggle-therms" data-view="therms">Gas (therms)</button>
+                <button type="button" class="toggle-btn" id="scenario-toggle-variance" data-view="variance">Variance vs Baseline</button>
+              </div>
+            </div>
+            <div class="chart-card scenario-chart-card">
+              <div class="chart-canvas-wrap scenario-canvas-wrap">
+                <canvas id="scenario-chart"></canvas>
+              </div>
+            </div>
           </div>
           <div class="result-heading"><div><p class="eyebrow">MONTHLY DETAIL</p><h3>Scenario comparison</h3></div><p>Variance is measured against the same month's baseline.</p></div>
           <div class="table-wrap wide-table" id="scenario-table"></div>
@@ -157,6 +189,7 @@
       <span>All calculations run locally in your browser.</span>
     </footer>
   </div>
+  <script src="chart.umd.min.js"></script>
   <script src="model.js"></script>
   <script src="app.js"></script>
 </body>

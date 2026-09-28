@@ -276,6 +276,41 @@
     };
   }
 
+  function compareSpaceHeating(options) {
+    options = options || {};
+    var therms = nonNegative(options.baselineTherms, "baseline therms");
+    var kwh = nonNegative(options.baselineKwh, "baseline kWh");
+    var days = positive(options.days, "billing days");
+    var watts = nonNegative(options.heaterWatts, "heater watts");
+    var heaterHours = nonNegative(options.heaterHoursPerDay, "heater hours per day");
+    if (heaterHours > 24) throw new Error("heater hours per day cannot exceed 24");
+    var setback = calculateSetbackSavings(options.setbackDegrees, options.setbackHoursPerDay, days);
+    var thermsSaved = Math.min(setback.thermsSaved, Math.max(0, therms - MODEL.GAS_MIN_THERMS));
+    var kwhSaved = Math.min(setback.kwhSaved, Math.max(0, kwh - MODEL.ELECTRIC_MIN_KWH));
+    var heaterKwh = watts / 1000 * heaterHours * days;
+    var baseline = calculateBill(therms, kwh, days);
+    var targeted = calculateBill(therms - thermsSaved, kwh - kwhSaved + heaterKwh, days);
+    var gasSaved = baseline.gasPostTax - targeted.gasPostTax;
+    var otherElectricSaved = kwhSaved * MODEL.ELECTRIC_RATE;
+    var heaterCost = heaterKwh * MODEL.ELECTRIC_RATE;
+    var netSavings = baseline.totalPostTax - targeted.totalPostTax;
+    var breakEvenHoursPerDay = watts > 0
+      ? (gasSaved + otherElectricSaved) / (watts / 1000 * days * MODEL.ELECTRIC_RATE)
+      : null;
+    return {
+      baseline: baseline,
+      targeted: targeted,
+      thermsSaved: thermsSaved,
+      otherKwhSaved: kwhSaved,
+      heaterKwh: heaterKwh,
+      gasSaved: gasSaved,
+      otherElectricSaved: otherElectricSaved,
+      heaterCost: heaterCost,
+      netSavings: netSavings,
+      breakEvenHoursPerDay: breakEvenHoursPerDay
+    };
+  }
+
   global.ForecastModel = {
     MODEL: MODEL,
     MONTHLY_NORMALS: MONTHLY_NORMALS,
@@ -287,6 +322,7 @@
     calculateBill: calculateBill,
     forecastWeather: forecastWeather,
     generateScenarios: generateScenarios,
-    calculateSetbackSavings: calculateSetbackSavings
+    calculateSetbackSavings: calculateSetbackSavings,
+    compareSpaceHeating: compareSpaceHeating
   };
 })(window);

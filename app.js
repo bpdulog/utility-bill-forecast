@@ -538,6 +538,40 @@
     }
   }
 
+  function calculateSpaceHeating() {
+    clearError("space-error");
+    try {
+      var result = model.compareSpaceHeating({
+        baselineTherms: readNumber("space-therms"),
+        baselineKwh: readNumber("space-kwh"),
+        days: readNumber("space-days"),
+        setbackDegrees: readNumber("space-degrees"),
+        setbackHoursPerDay: readNumber("space-setback-hours"),
+        heaterWatts: readNumber("space-watts"),
+        heaterHoursPerDay: readNumber("space-heater-hours")
+      });
+      setMetric("space-baseline-card", "Current bill", money(result.baseline.totalPostTax), "gas + electric");
+      setMetric("space-targeted-card", "With space heater", money(result.targeted.totalPostTax), "same billing period");
+      setMetric("space-net-card", result.netSavings >= 0 ? "Net savings" : "Added cost", money(Math.abs(result.netSavings)), result.netSavings >= 0 ? "less than current bill" : "more than current bill");
+      var breakEven = result.breakEvenHoursPerDay;
+      setMetric("space-break-even-card", "Break even runtime",
+        breakEven === null ? "N/A" : number(breakEven, 1) + " h/day",
+        breakEven === null ? "heater power is zero" : breakEven > 24 ? "more than 24 hours/day" : "at the entered wattage");
+      renderTable("space-table", [
+        { key: "item", label: "Change" },
+        { key: "usage", label: "Usage", align: "right" },
+        { key: "amount", label: "Bill impact", align: "right", format: signedMoney }
+      ], [
+        { item: "Less gas heating", usage: "−" + number(result.thermsSaved, 1) + " therms", amount: -result.gasSaved },
+        { item: "Less heating-related electric use", usage: "−" + number(result.otherKwhSaved, 1) + " kWh", amount: -result.otherElectricSaved },
+        { item: "Space heater", usage: "+" + number(result.heaterKwh, 1) + " kWh", amount: result.heaterCost },
+        { item: "Net bill change", usage: "", amount: -result.netSavings }
+      ], { totalRow: function (row) { return row.item === "Net bill change"; } });
+    } catch (error) {
+      showError("space-error", error);
+    }
+  }
+
   function toggleWeatherInputs() {
     var mode = document.querySelector("input[name='weather-mode']:checked").value;
     byId("month-input-wrap").hidden = mode !== "month";
@@ -626,6 +660,7 @@
     bindLiveCalculation(["weather-month", "weather-days", "weather-temperature"], calculateWeatherForecast);
     bindLiveCalculation(["scenario-days", "scenario-gcf"], calculateScenarios);
     bindLiveCalculation(["setback-degrees", "setback-hours"], calculateSetback);
+    bindLiveCalculation(["space-therms", "space-kwh", "space-days", "space-degrees", "space-setback-hours", "space-watts", "space-heater-hours"], calculateSpaceHeating);
 
     document.querySelectorAll(".gcf-preset").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -638,6 +673,7 @@
     calculateWeatherForecast();
     calculateScenarios();
     calculateSetback();
+    calculateSpaceHeating();
   }
 
   document.addEventListener("DOMContentLoaded", initialize);

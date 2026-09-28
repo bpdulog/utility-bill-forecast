@@ -8,6 +8,7 @@ The calculator runs entirely in the browser. It includes:
 - Weather-driven monthly forecasts using HDD/CDD
 - October–April mild, baseline, and severe winter scenario trajectories and comparisons
 - Thermostat setback savings estimates
+- Space heater tradeoff comparison using a recent bill, thermostat setback, heater wattage, and runtime
 
 ## Run locally
 
@@ -57,3 +58,5 @@ gas_rate = 2.4216 + (gcf - 0.80) * 1.08809
 ```
 
 Reading it in round numbers: `0.80` is an ordinary gas year, `0.90` is a high one (about 12% dearer per therm), and `1.00` is a spike (about 25% dearer). The mild and severe scenarios are separate: they scale the resulting gas rate directly by −4% and +6% on top of whatever baseline you enter. Fixed charges and electricity are unaffected, so a higher GCF only changes the variable gas line.
+
+The space heater comparison starts with a comparable bill. It applies the existing setback heating-demand coefficients to estimate avoided gas and heating-related electric use, bounded by current usage floors, then adds `watts / 1000 × hours/day × billing days` of electric heater use. The net result and break even runtime use the model's post-tax marginal rates. This is a planning estimate: actual setback savings depend on the home and weather, and heater power draw may cycle below its rated wattage.

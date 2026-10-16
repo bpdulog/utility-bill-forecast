@@ -378,6 +378,12 @@ td:first-child { font-family: "Manrope", sans-serif; font-weight: 700; }
   margin-top: 0;
 }
 
+.winter-summary { background: var(--white); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 40px; padding: 32px; }
+.winter-summary .metric-grid { margin-bottom: 20px; }
+.summary-detail { margin-top: 24px; }
+.summary-detail summary { color: var(--forest); cursor: pointer; font-size: 0.85rem; font-weight: 700; margin-bottom: 14px; }
+.model-notes > .comparison-note { grid-column: 1 / -1; margin-top: 0; }
+
 .scenario-chart-section {
   margin: 36px 0 32px;
 }
@@ -413,6 +419,7 @@ code { color: var(--forest); font-family: "DM Mono", monospace; font-size: 0.72r
 
 @media (max-width: 760px) {
   .site-shell { padding: 0 20px; }
+  .winter-summary { padding: 24px 16px; }
   .site-header { min-height: 68px; }
   .site-status { font-size: 0.57rem; }
   .hero { align-items: start; flex-direction: column; gap: 42px; min-height: auto; padding: 62px 0 58px; }

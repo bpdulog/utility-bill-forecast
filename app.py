@@ -73,15 +73,15 @@ with tab_scenario:
     st.subheader("October–April winter scenarios")
     scenario_days = st.number_input("Days per billing cycle", min_value=1.0, value=30.0, step=1.0, key="scenario_days")
     scenario_gcf = st.number_input(
-        "Wholesale gas cost factor (0.80 = normal)",
+        "Gas supply cost ($/therm; model reference 0.80)",
         min_value=0.0,
         value=0.80,
         step=0.01,
         format="%.2f",
         help=(
-            "A unitless gauge of how expensive wholesale gas supply is right now, not a dollar "
-            "price. 0.80 is the calibrated normal; 0.90 adds roughly 12% to the gas rate and "
-            "1.00 roughly 25%. Mild and severe scenarios then scale the resulting gas rate by "
+            "Con Edison's gas cost factor is in dollars per therm. 0.80 is a model "
+            "assumption, not a verified winter price. 0.90 adds about 4.5% to the all-in "
+            "gas rate; 1.00 adds about 9%. Mild and severe scenarios scale that rate by "
             "-4% and +6%."
         ),
     )

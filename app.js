@@ -6,6 +6,7 @@
 
   var usageChartInstance = null;
   var scenarioChartInstance = null;
+  var summaryChartInstance = null;
   var currentUsageView = "stacked";
   var currentScenarioView = "dollars";
   var latestBillData = null;
@@ -330,7 +331,7 @@
     if (currentScenarioView === "dollars") {
       datasets = [
         {
-          label: "Mild Winter (-4% GCF, -12% HDD)",
+          label: "Mild Winter (-4% gas rate, -12% HDD)",
           data: mildRows.map(function (r) { return r.totalDollars; }),
           backgroundColor: "#8ebca0",
           hoverBackgroundColor: "#78ac8d",
@@ -344,7 +345,7 @@
           borderRadius: 4
         },
         {
-          label: "Severe Winter (+6% GCF, +12% HDD)",
+          label: "Severe Winter (+6% gas rate, +12% HDD)",
           data: severeRows.map(function (r) { return r.totalDollars; }),
           backgroundColor: "#f0b65b",
           hoverBackgroundColor: "#dfa447",
@@ -471,10 +472,54 @@
     });
   }
 
+  function renderWinterSummary(result) {
+    var rows = result.rows.filter(function (row) { return row.scenario === "Baseline"; });
+    var total = result.seasonalTotals[0];
+    clearError("summary-error");
+    byId("summary-results").hidden = false;
+    setText("summary-assumptions", "Post-tax baseline · " + number(readNumber("scenario-days"), 0) + " days per cycle · $" + number(readNumber("scenario-gcf"), 2) + "/therm gas supply · normal weather");
+    setMetric("summary-gas-card", "Season gas", money(total.gasDollars), "October–April");
+    setMetric("summary-electric-card", "Season electric", money(total.electricDollars), "October–April");
+    setMetric("summary-total-card", "Season total", money(total.totalDollars), "calculated baseline");
+    renderTable("summary-table", [
+      { key: "month", label: "Month" },
+      { key: "gasDollars", label: "Gas", align: "right", format: money },
+      { key: "electricDollars", label: "Electric", align: "right", format: money },
+      { key: "totalDollars", label: "Total", align: "right", format: money }
+    ], rows.concat([total]), { totalRow: function (row) { return row.month === "Season total"; } });
+    if (!window.Chart) return;
+    if (summaryChartInstance) summaryChartInstance.destroy();
+    summaryChartInstance = new Chart(byId("summary-chart").getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: rows.map(function (row) { return row.month.slice(0, 3) + (row.month === "October" ? " 2026" : row.month === "January" ? " 2027" : ""); }),
+        datasets: [
+          { label: "Gas", data: rows.map(function (row) { return row.gasDollars; }), backgroundColor: "#1d4b3f", borderRadius: 4, order: 2 },
+          { label: "Electric", data: rows.map(function (row) { return row.electricDollars; }), backgroundColor: "#f0b65b", borderRadius: 4, order: 2 },
+          { type: "line", label: "Total", data: rows.map(function (row) { return row.totalDollars; }), borderColor: "#17221f", backgroundColor: "#17221f", borderWidth: 3, pointRadius: 4, pointStyle: "rectRot", tension: 0.2, order: 1 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "top", labels: { usePointStyle: true, padding: 18 } },
+          tooltip: { callbacks: { label: function (context) { return context.dataset.label + ": " + money(context.parsed.y); } } }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, title: { display: true, text: "Monthly cost ($)" }, ticks: { callback: function (value) { return "$" + value; } } }
+        }
+      }
+    });
+  }
+
   function calculateScenarios() {
     clearError("scenario-error");
     try {
       var result = model.generateScenarios(readNumber("scenario-days"), readNumber("scenario-gcf"));
+      renderWinterSummary(result);
       var rows = result.rows;
       renderTable("scenario-table", [
         { key: "scenario", label: "Scenario" },
@@ -509,6 +554,12 @@
       renderScenarioChart(result);
     } catch (error) {
       showError("scenario-error", error);
+      showError("summary-error", error);
+      byId("summary-results").hidden = true;
+      setText("summary-assumptions", "Enter valid billing days and gas supply cost in Winter scenarios to refresh this summary.");
+      ["summary-gas-card", "summary-electric-card", "summary-total-card"].forEach(function (id) {
+        setMetric(id, id === "summary-gas-card" ? "Season gas" : id === "summary-electric-card" ? "Season electric" : "Season total", "—", "awaiting valid inputs");
+      });
     }
   }
 

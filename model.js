@@ -19,12 +19,11 @@
     ELECTRIC_KWH_PER_CDD: 0.5083,
     GAS_MIN_THERMS: 4.0,
     ELECTRIC_MIN_KWH: 235.0,
-    // GCF (gas cost factor) is a unitless wholesale supply-cost multiplier, not
-    // a price: 0.80 is normal/ordinary market, and only the distance from 0.80
-    // is priced into the gas rate. Higher means gas is expensive right now.
+    // GCF is a gas supply charge in dollars/therm. $0.80/therm is the model's
+    // reference assumption, not a verified winter price. See RATE_REVIEW.md.
     BASELINE_GCF: 0.80,
-    // Cents-per-therm slope that turns the unitless GCF distance into a rate;
-    // a 1% move in GCF moves the gas rate by about 0.45%.
+    // Tax multiplier on a supply-price difference: +$0.10/therm in GCF adds
+    // $0.108809/therm to the all-in gas rate.
     GCF_TO_GAS_RATE: 1.08809,
     WESTCHESTER_GRT_RATE: 0.0265,
     WHITE_PLAINS_SALES_TAX_RATE: 0.06,
@@ -103,8 +102,8 @@
     };
   }
 
-  // Converts a unitless wholesale gas cost factor into a $/therm rate.
-  // 0.80 is the calibrated normal, so only the distance from it is priced in:
+  // Converts a supply cost in $/therm into an all-in $/therm gas rate.
+  // 0.80 is the model reference, so only the distance from it is priced in:
   // gasRateForGcf(0.80) returns GAS_RATE, and 0.84 adds 0.04 * GCF_TO_GAS_RATE.
   function gasRateForGcf(gcf) {
     var factor = nonNegative(gcf === undefined ? MODEL.BASELINE_GCF : gcf, "GCF");

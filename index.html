@@ -34,6 +34,27 @@
         </div>
       </section>
 
+      <section class="winter-summary" aria-labelledby="winter-summary-title">
+        <div class="panel-heading">
+          <div><p class="eyebrow">WINTER 2026–27 · OCTOBER–APRIL</p><h2 id="winter-summary-title">Your winter, month by month.</h2></div>
+          <p>Normal-weather estimates for gas, electricity, and your combined bill. Updates with the billing days and supply cost in Winter scenarios.</p>
+        </div>
+        <div class="metric-grid three-up" aria-live="polite">
+          <article class="metric-card gas-card" id="summary-gas-card"><span class="metric-label">Season gas</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          <article class="metric-card electric-card" id="summary-electric-card"><span class="metric-label">Season electric</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+          <article class="metric-card dark-card" id="summary-total-card"><span class="metric-label">Season total</span><strong class="metric-value">—</strong><span class="metric-detail"></span></article>
+        </div>
+        <p id="summary-assumptions" class="comparison-note"></p>
+        <p id="summary-error" class="error-message" role="alert" hidden></p>
+        <div id="summary-results">
+          <div class="chart-card">
+            <div class="chart-canvas-wrap scenario-canvas-wrap"><canvas id="summary-chart" role="img" aria-label="Monthly baseline gas, electricity, and total costs from October 2026 through April 2027. Exact amounts appear in the following table."></canvas></div>
+          </div>
+          <details class="summary-detail" open><summary>Monthly amounts</summary><div class="table-wrap" id="summary-table"></div></details>
+        </div>
+        <p class="comparison-note"><strong>Working winter budget: about $2,800.</strong> At the reference settings (30 days and $0.80/therm supply), the calculated baseline is about $2,683. The budget adds room for January delivery increases and uncertainty. Current outlooks favor milder Northeast weather and lower gas prices; electricity faces upward pressure. The budget is a planning allowance, and does not change the chart's rates. <a href="RATE_REVIEW.md">Pricing and winter outlook review · October 16, 2026</a></p>
+      </section>
+
       <section class="workspace" aria-label="Bill forecasting tools">
         <nav class="tabs" role="tablist" aria-label="Forecasting tools">
           <button class="tab-button is-active" id="usage-tab" role="tab" aria-selected="true" aria-controls="usage-panel">Direct usage <span>01</span></button>
@@ -117,11 +138,11 @@
               <p class="eyebrow">03 / OCTOBER–APRIL</p>
               <h2>See the shape of winter risk.</h2>
             </div>
-            <p>Mild and severe cases adjust heating demand and the delivered gas rate around the baseline. The gas cost factor is a unitless market gauge: 0.80 is normal, higher means an expensive gas year; mild and severe then move the resulting gas rate by −4% and +6%.</p>
+            <p>Mild and severe cases adjust heating demand by −12% and +12% and the delivered gas rate by −4% and +6%. Gas supply cost is entered in dollars per therm; $0.80 is the model reference assumption.</p>
           </div>
           <div class="input-grid two-up compact-inputs">
             <label class="field">Days per billing cycle <span>days</span><input id="scenario-days" type="number" min="1" step="1" value="30"><small>Applied to each month</small></label>
-            <label class="field">Wholesale gas cost factor <span>0.80 = normal</span><input id="scenario-gcf" type="number" min="0" step="0.01" value="0.80" aria-describedby="scenario-gcf-help"><small id="scenario-gcf-help">How expensive gas supply is right now, not a price. See what a higher factor costs you: <button type="button" class="gcf-preset" data-gcf="0.80">0.80 normal</button> <button type="button" class="gcf-preset" data-gcf="0.90">0.90 high (+12%)</button> <button type="button" class="gcf-preset" data-gcf="1.00">1.00 spike (+25%)</button></small></label>
+            <label class="field">Gas supply cost (GCF) <span>$/therm</span><input id="scenario-gcf" type="number" min="0" step="0.01" value="0.80" aria-describedby="scenario-gcf-help"><small id="scenario-gcf-help">Supply assumption for the whole season; changes only this tab. Buttons show the change in the all-in gas rate: <button type="button" class="gcf-preset" data-gcf="0.80">$0.80 reference</button> <button type="button" class="gcf-preset" data-gcf="0.90">$0.90 (+4.5%)</button> <button type="button" class="gcf-preset" data-gcf="1.00">$1.00 (+9.0%)</button></small></label>
           </div>
           <div class="error-message" id="scenario-error" role="alert" hidden></div>
           <div class="metric-grid two-up scenario-metrics">
@@ -197,6 +218,7 @@
       </section>
 
       <section class="model-notes" aria-labelledby="notes-title">
+        <p class="comparison-note"><strong>Winter 2026–27 pricing review · October 16, 2026:</strong> The baseline remains a provisional household estimate using bills from 2024–2026. It does not separately apply the January 2027 delivery increase. Supply prices change monthly; $0.80/therm is an assumption. <a href="RATE_REVIEW.md">Read the pricing checks, approved increases, and budgeting sensitivity.</a></p>
         <div>
           <p class="eyebrow">UNDER THE HOOD</p>
           <h2 id="notes-title">A transparent model, not a black box.</h2>

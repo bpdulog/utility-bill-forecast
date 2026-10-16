@@ -5,6 +5,8 @@ An interactive, static GitHub Pages app for estimating natural-gas and electrici
 The calculator runs entirely in the browser. It includes:
 
 - Direct usage bill breakdowns with interactive cost composition charts
+- Winter monthly summary chart and table for gas, electricity, and total costs,
+  plus a separate $2,800 seasonal planning budget at reference settings
 - Weather-driven monthly forecasts using HDD/CDD
 - October–April mild, baseline, and severe winter scenario trajectories and comparisons
 - Thermostat setback savings estimates
@@ -41,6 +43,12 @@ The workflow in `.github/workflows/pages.yml` publishes the repository as a stat
 
 ## Model notes
 
+The [winter 2026–27 pricing review](RATE_REVIEW.md), checked October 16, 2026,
+compares published Con Edison pricing with the current baseline. The calibration
+uses a mix of 2024–2026 household bills with Con Edison supplying both fuels.
+Defaults remain provisional: the model does not separately apply January 2027
+delivery changes, and future monthly supply prices are unknown.
+
 The primary post-tax outputs use the calibrated equations:
 
 - Gas: `31.57 + 2.4216 × therms`
@@ -49,14 +57,22 @@ The primary post-tax outputs use the calibrated equations:
 
 Billing days prorate the fixed intercepts while leaving measured usage and its marginal charge unchanged. Weather estimates use a 65°F base temperature. The gas model identifies a 2.65% Westchester Gross Receipts Tax and 6% White Plains sales tax; the electric pre-tax display uses an explicit 6% presentation assumption.
 
-### The wholesale gas cost factor (GCF)
+### The gas cost factor (GCF)
 
-The winter-scenario input labelled "wholesale gas cost factor" is a **unitless market gauge of how expensive gas supply is at that moment**, not a price in dollars. `0.80` is the calibrated normal, so the factor only moves the marginal gas rate by its distance from 0.80:
+Con Edison publishes GCF as a **gas supply charge in dollars per therm**.
+The winter-scenario input uses `$0.80/therm` as the model reference assumption,
+not a verified normal or a quoted winter price. It moves the marginal gas rate
+by the supply-price difference, including the model's gas tax multiplier:
 
 ```text
 gas_rate = 2.4216 + (gcf - 0.80) * 1.08809
 ```
 
-Reading it in round numbers: `0.80` is an ordinary gas year, `0.90` is a high one (about 12% dearer per therm), and `1.00` is a spike (about 25% dearer). The mild and severe scenarios are separate: they scale the resulting gas rate directly by −4% and +6% on top of whatever baseline you enter. Fixed charges and electricity are unaffected, so a higher GCF only changes the variable gas line.
+At `$0.90/therm`, the all-in marginal gas rate rises about 4.5%; at
+`$1.00/therm`, it rises about 9.0%. The supply component itself rises 12.5%
+and 25%, respectively. Mild and severe scenarios separately scale the resulting
+gas rate by −4% and +6%. This input affects only winter scenarios; other tabs
+and Python forecasts continue to use the reference rates. Holding delivery
+costs fixed is a sensitivity assumption, not a complete tariff calculation.
 
 The space heater comparison starts with a comparable bill. It applies the existing setback heating-demand coefficients to estimate avoided gas and heating-related electric use, bounded by current usage floors, then adds `watts / 1000 × hours/day × billing days` of electric heater use. The net result and break even runtime use the model's post-tax marginal rates. This is a planning estimate: actual setback savings depend on the home and weather, and heater power draw may cycle below its rated wattage.

@@ -28,14 +28,11 @@ ELECTRIC_KWH_PER_CDD = 0.5083
 GAS_MIN_THERMS = 4.0
 ELECTRIC_MIN_KWH = 235.0
 
-# GCF (gas cost factor) is a wholesale supply-cost multiplier, not a dollar
-# amount: 0.80 is the ordinary-market reference point. Think of it as "how
-# expensive gas is right now" on a unitless scale where 1.00 means supply costs
-# are 25% above normal and 0.80 is normal. It shifts the marginal gas rate
-# linearly, so the household's other charges are unaffected. A 1% move in GCF
-# (for example 0.80 -> 0.808) moves the gas rate by 1.08809 cents/therm, roughly
-# 0.45%; GCF_TO_GAS_RATE is the cents-per-therm slope that converts the unitless
-# factor into the calibrated rate.
+# Con Edison's gas cost factor (GCF) is a supply charge in dollars/therm.
+# $0.80/therm is this model's reference assumption, not a verified winter price.
+# The conversion applies the model's gas tax multiplier to a supply-price
+# difference: a $0.10/therm increase adds $0.108809/therm to the all-in rate.
+# See RATE_REVIEW.md for the October 2026 review and remaining uncertainties.
 BASELINE_GCF = 0.80
 GCF_TO_GAS_RATE = 1.08809
 
@@ -202,10 +199,9 @@ def predict_usage(hdd: float, cdd: float) -> Usage:
 
 
 def gas_rate_for_gcf(gcf: float = BASELINE_GCF) -> float:
-    """Translate a unitless wholesale gas cost factor into a $/therm gas rate.
+    """Translate a gas supply cost in $/therm into an all-in $/therm gas rate.
 
-    ``gcf`` is a market-cost multiplier relative to the 0.80 normal, not a
-    price. The calibrated all-in rate already reflects ``BASELINE_GCF``, so
+    The calibrated all-in rate already reflects ``BASELINE_GCF``, so
     only the distance from 0.80 is priced in. ``gcf=0.80`` returns
     ``GAS_RATE`` unchanged; ``gcf=0.84`` (supply costs 5% above normal) returns
     ``GAS_RATE + 0.04 * GCF_TO_GAS_RATE``.

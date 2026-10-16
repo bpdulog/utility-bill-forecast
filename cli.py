@@ -57,8 +57,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.80,
         help=(
-            "wholesale gas cost factor: a unitless market gauge where 0.80 is normal and "
-            "higher means gas is expensive (default: 0.80)"
+            "gas supply cost in dollars/therm; 0.80 is the model reference "
+            "assumption, not a verified winter price (default: 0.80)"
         ),
     )
     return parser
